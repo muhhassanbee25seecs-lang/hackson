@@ -1,7 +1,7 @@
 FROM debian:bookworm
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Added qt6-base-dev and qt6-base-dev-tools
+# Added qt6-multimedia-dev and libqt6multimediawidgets6
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -16,14 +16,16 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     qt6-base-dev \
     qt6-base-dev-tools \
+    qt6-multimedia-dev \
+    libqt6multimediawidgets6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy everything from your local folder to the container
+# Copy your local code
 COPY . .
 
-# Move into the subdirectory where your .pro file lives
+# Move into the subdirectory with the .pro file
 WORKDIR /app/df
 
 # Build using qmake6
