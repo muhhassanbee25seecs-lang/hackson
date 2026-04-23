@@ -9,9 +9,13 @@ WORKDIR /app
 # Copy EVERYTHING shown in your VS Code sidebar
 COPY . .
 
-# 2. Move INTO the directory where the code and CMakeLists.txt actually are
+# 2. Move into your project subdirectory
 WORKDIR /app/df
 
-# 3. Build from THERE
-RUN qmake *.pro && make
+# 3. Build using qmake
+# We use -makefile to ensure it generates a clean Makefile
+RUN qmake6 . && make -j$(nproc)
+
+# 4. Set the path to your executable
+# Ensure the name matches the TARGET defined in your .pro file
 CMD ["./CPProject2"]
