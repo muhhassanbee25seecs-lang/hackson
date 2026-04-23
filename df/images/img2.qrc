@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/res1">
+        <file>Graduation_Cap_PNG_Picture.png</file>
+    </qresource>
+</RCC>

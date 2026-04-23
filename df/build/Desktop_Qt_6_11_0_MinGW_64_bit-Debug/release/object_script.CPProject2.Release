@@ -1,0 +1,16 @@
+release/dialog1.o
+release/dialog2.o
+release/dialog3.o
+release/dialog4.o
+release/main.o
+release/mainwindow.o
+release/qrc_img.o
+release/qrc_img2.o
+release/qrc_img3.o
+release/qrc_img5.o
+release/qrc_img6.o
+release/moc_dialog1.o
+release/moc_dialog2.o
+release/moc_dialog3.o
+release/moc_dialog4.o
+release/moc_mainwindow.o

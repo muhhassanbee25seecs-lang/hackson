@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/res4">
+        <file>build/Desktop_Qt_6_11_0_MinGW_64_bit-Debug/classroom.jpg</file>
+    </qresource>
+</RCC>

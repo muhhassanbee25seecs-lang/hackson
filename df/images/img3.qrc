@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/res3">
+        <file>people.png</file>
+    </qresource>
+</RCC>

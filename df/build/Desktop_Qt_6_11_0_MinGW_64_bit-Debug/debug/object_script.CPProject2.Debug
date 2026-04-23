@@ -1,0 +1,16 @@
+debug/dialog1.o
+debug/dialog2.o
+debug/dialog3.o
+debug/dialog4.o
+debug/main.o
+debug/mainwindow.o
+debug/qrc_img.o
+debug/qrc_img2.o
+debug/qrc_img3.o
+debug/qrc_img5.o
+debug/qrc_img6.o
+debug/moc_dialog1.o
+debug/moc_dialog2.o
+debug/moc_dialog3.o
+debug/moc_dialog4.o
+debug/moc_mainwindow.o
