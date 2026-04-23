@@ -1,21 +1,33 @@
 FROM debian:bookworm
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Added qt6-base-dev and qt6-base-dev-tools
 RUN apt-get update && apt-get install -y \
-    build-essential cmake git libopencv-dev libgtk-3-dev \
-    pkg-config libavcodec-dev libavformat-dev libswscale-dev \
-    libv4l-dev x11-apps && rm -rf /var/lib/apt/lists/*
+    build-essential \
+    cmake \
+    git \
+    libopencv-dev \
+    libgtk-3-dev \
+    pkg-config \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    x11-apps \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copy EVERYTHING shown in your VS Code sidebar
+# Copy everything from your local folder to the container
 COPY . .
 
-# 2. Move into your project subdirectory
+# Move into the subdirectory where your .pro file lives
 WORKDIR /app/df
 
-# 3. Build using qmake
-# We use -makefile to ensure it generates a clean Makefile
+# Build using qmake6
 RUN qmake6 . && make -j$(nproc)
 
-# 4. Set the path to your executable
-# Ensure the name matches the TARGET defined in your .pro file
+# Execute the binary
 CMD ["./CPProject2"]
