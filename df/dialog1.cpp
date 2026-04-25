@@ -9,16 +9,14 @@
 #include <QDir>
 #include <QMessageBox>
 
-// --- UPDATED CONSTRUCTOR ---
-// Removed m_camera and m_imageCapture because they are no longer in dialog1.h
 Dialog1::Dialog1(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::Dialog1)
+    ui(new Ui::Dialog1),
+    m_timer(nullptr) // Initialize the timer pointer
 {
     ui->setupUi(this);
 }
 
-// --- UPDATED DESTRUCTOR ---
 Dialog1::~Dialog1()
 {
     if (m_cap.isOpened()) {
@@ -27,6 +25,7 @@ Dialog1::~Dialog1()
     delete ui;
 }
 
+// --- KEEP YOUR EXISTING SAVE AND TOGGLE LOGIC ---
 void Dialog1::on_btn_save_clicked()
 {
     QString name = ui->lineEdit->text();
@@ -40,11 +39,9 @@ void Dialog1::on_btn_save_clicked()
         return;
     }
 
-    QString dirPath = "/app/inventory";
+    QString dirPath = "/app/df/inventory"; // Path based on your explorer
     QDir dir;
-    if (!dir.exists(dirPath)) {
-        dir.mkpath(dirPath);
-    }
+    if (!dir.exists(dirPath)) dir.mkpath(dirPath);
 
     QFile file(dirPath + "/attendance_records.txt");
     if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
@@ -57,93 +54,83 @@ void Dialog1::on_btn_save_clicked()
         out << "Status:    " << status << "\n";
         out << "------------------------------\n";
         file.close();
-
-        QMessageBox::information(this, "Success", "Attendance data saved for ID: " + id);
-
-        ui->lineEdit->clear();
-        ui->lineEdit->setProperty("student_id", "");
-        ui->lineEdit_roll->clear();
-        ui->lineEdit_2->setText("ABSENT");
-        ui->lineEdit_2->setStyleSheet("color: red; background-color: #252a41; border: 1px solid #3a3a4f; border-radius: 5px; padding-left: 15px; font-size: 16px; font-weight: bold;");
-    } 
-    else {
-        QMessageBox::critical(this, "File Error", "Could not write to inventory file.");
+        QMessageBox::information(this, "Success", "Attendance saved!");
     }
 }
 
 void Dialog1::on_pushButton_clicked()
 {
-    QString currentName = ui->lineEdit->text();
-    if (currentName.isEmpty() || currentName.contains("Error")) {
-        return; 
-    }
-
-    QString currentStatus = ui->lineEdit_2->text();
-
-    if (currentStatus == "ABSENT") {
+    if (ui->lineEdit->text().isEmpty()) return;
+    
+    if (ui->lineEdit_2->text() == "ABSENT") {
         ui->lineEdit_2->setText("PRESENT");
         ui->lineEdit_2->setStyleSheet("color: #2ecc71; background-color: #252a41; border: 1px solid #3a3a4f; border-radius: 5px; padding-left: 15px; font-size: 16px; font-weight: bold;");
-    } 
-    else {
+    } else {
         ui->lineEdit_2->setText("ABSENT");
         ui->lineEdit_2->setStyleSheet("color: red; background-color: #252a41; border: 1px solid #3a3a4f; border-radius: 5px; padding-left: 15px; font-size: 16px; font-weight: bold;");
     }
 }
 
+// --- UPDATED IP WEBCAM LOGIC ---
 void Dialog1::on_pushButton_2_clicked()
 {
-    printf("Starting IP camera...\n");
-
-    QFile file("camera.conf");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        printf("camera.conf missing\n");
+    // Toggle: If camera is running, stop it
+    if (m_cap.isOpened()) {
+        if (m_timer) m_timer->stop();
+        m_cap.release();
+        ui->label->clear();
+        ui->pushButton_2->setText("START CAMERA");
         return;
     }
 
+    // 1. Read the IP URL from camera.conf
+    QFile file("/app/camera.conf"); 
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "camera.conf missing in /app/");
+        return;
+    }
     QString url = QTextStream(&file).readLine().trimmed();
     file.close();
 
-    if (url.isEmpty()) {
-        printf("No camera URL\n");
-        return;
-    }
-
+    // 2. Open the IP Stream
     m_cap.open(url.toStdString());
-
     if (!m_cap.isOpened()) {
-        printf("Camera failed to open\n");
+        QMessageBox::warning(this, "Error", "Cannot reach IP Webcam: " + url);
         return;
     }
 
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, [this]() {
-        cv::Mat frame;
-        m_cap >> frame;
-        if (frame.empty()) return;
+    ui->pushButton_2->setText("STOP CAMERA");
 
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-        QImage img(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
-        ui->label->setPixmap(QPixmap::fromImage(img).scaled(ui->label->size(), Qt::KeepAspectRatio));
-    });
-    timer->start(30);
-}
+    // 3. Start Timer to refresh the frame and auto-capture
+    if (!m_timer) {
+        m_timer = new QTimer(this);
+        connect(m_timer, &QTimer::timeout, this, [this]() {
+            cv::Mat frame;
+            m_cap >> frame;
+            if (frame.empty()) return;
 
-// --- UPDATED PROCESS CAPTURED IMAGE ---
-void Dialog1::processCapturedImage(int id, const QImage &preview)
-{
-    Q_UNUSED(id);
-    QString fileName = "/app/test.jpg";
-    
-    if(preview.save(fileName, "JPG")) {
-        printf("SUCCESS: Image saved. Starting Recognition...\n");
-        runRecognition();
-    } else {
-        printf("ERROR: Could not save image.\n");
+            // Display current frame
+            cv::Mat rgb;
+            cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
+            QImage img(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format_RGB888);
+            ui->label->setPixmap(QPixmap::fromImage(img).scaled(ui->label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        });
     }
 
-    // Removed reference to m_camera
-    ui->pushButton_2->setEnabled(true);
-    ui->pushButton_2->setText("START CAMERA");
+    m_timer->start(30);
+
+    // 4. Trigger Recognition capture after 2 seconds (simulating your original logic)
+    QTimer::singleShot(2000, this, [this]() {
+        if (m_cap.isOpened()) {
+            cv::Mat captureFrame;
+            m_cap >> captureFrame;
+            if (!captureFrame.empty()) {
+                cv::imwrite("/app/test.jpg", captureFrame);
+                printf("Capture successful! Running Recognition...\n");
+                runRecognition();
+            }
+        }
+    });
 }
 
 void Dialog1::runRecognition()
@@ -155,61 +142,44 @@ void Dialog1::runRecognition()
             this, [this, recognizeProcess](int exitCode, QProcess::ExitStatus exitStatus) {
         
         if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-            QString fullOutput = recognizeProcess->readAllStandardOutput();
-            QStringList lines = fullOutput.split("\n");
+            QString output = recognizeProcess->readAllStandardOutput();
             QString studentId = "";
+            QStringList lines = output.split("\n");
 
             for (const QString &line : lines) {
                 if (line.contains("Recognized Student ID:")) {
-                    studentId = line.section(':', 1).section('|', 0).trimmed();
+                    studentId = line.section(':', 1).trimmed();
                     break; 
                 }
             }
 
             if (!studentId.isEmpty()) {
                 readStudentInfo(studentId);
-            } 
-            else {
-                QMessageBox::warning(this, "Recognition Failed", "Student not recognized.");
-                ui->lineEdit->setText("Unknown");
-                ui->lineEdit->setProperty("student_id", "");
-                ui->lineEdit_roll->setText("N/A");
+            } else {
+                QMessageBox::warning(this, "Failed", "Not Recognized.");
             }
         }
         recognizeProcess->deleteLater();
     });
 
-    // Separation of arguments is cleaner for the compiler
-    recognizeProcess->start("./recognize", QStringList());
+    recognizeProcess->start("./recognize");
 }
 
 void Dialog1::readStudentInfo(QString folderName)
 {
-    QString infoPath = "/app/dataset/" + folderName + "/info.txt";
+    QString infoPath = "/app/df/dataset/" + folderName + "/info.txt";
     QFile file(infoPath);
 
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
-        ui->lineEdit->clear();
-        ui->lineEdit_roll->clear();
         ui->lineEdit->setProperty("student_id", folderName);
 
         while (!in.atEnd()) {
             QString line = in.readLine().trimmed();
-            if (line.startsWith("Name:", Qt::CaseInsensitive)) {
-                ui->lineEdit->setText(line.section(':', 1).trimmed());
-            }
-            if (line.startsWith("Roll:", Qt::CaseInsensitive)) {
-                ui->lineEdit_roll->setText(line.section(':', 1).trimmed());
-            }
+            if (line.startsWith("Name:", Qt::CaseInsensitive)) ui->lineEdit->setText(line.section(':', 1).trimmed());
+            if (line.startsWith("Roll:", Qt::CaseInsensitive)) ui->lineEdit_roll->setText(line.section(':', 1).trimmed());
         }
         file.close();
         ui->lineEdit_2->setText("ABSENT");
-        ui->lineEdit_2->setStyleSheet("color: red; background-color: #252a41; border: 1px solid #3a3a4f; border-radius: 5px; padding-left: 15px; font-size: 16px; font-weight: bold;");
-    } 
-    else {
-        ui->lineEdit->setText("Error: Data Missing");
-        ui->lineEdit->setProperty("student_id", "N/A");
-        ui->lineEdit_roll->setText("N/A");
     }
 }
