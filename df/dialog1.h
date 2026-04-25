@@ -2,10 +2,8 @@
 #define DIALOG1_H
 
 #include <QDialog>
-#include <QCamera>
-#include <QCameraInfo>
-#include <QCameraImageCapture>
 #include <QImage>
+#include <opencv2/opencv.hpp>
 
 namespace Ui {
 class Dialog1;
@@ -20,17 +18,19 @@ public:
     ~Dialog1();
 
 private slots:
-   void on_pushButton_clicked();   // Toggle Attendance Button
+    void on_pushButton_clicked();   // Toggle Attendance Button
     void on_pushButton_2_clicked(); // Start Camera Button
-    void on_btn_save_clicked();     // Save Data Button (if you plan to use it)
+    void on_btn_save_clicked();     // Save Data Button
     void processCapturedImage(int id, const QImage &preview);
 
 private:
     Ui::Dialog1 *ui;
-    QCamera *m_camera;
-    QCameraImageCapture *m_imageCapture;
 
-    // --- ADD THESE TWO LINES ---
+    // NEW CAMERA SYSTEM
+    cv::VideoCapture m_cap;
+
+    QString getCameraUrl();
+
     void runRecognition();
     void readStudentInfo(QString folderName);
 };

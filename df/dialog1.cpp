@@ -1,6 +1,7 @@
 #include "dialog1.h"
 #include "ui_dialog1.h"
 #include <QDateTime>
+#include <opencv2/opencv.hpp>
 #include <QTimer>
 #include <QProcess>
 #include <QFile>
@@ -106,30 +107,49 @@ void Dialog1::on_pushButton_clicked()
 }
 void Dialog1::on_pushButton_2_clicked()
 {
-    printf("Initializing camera... please wait 2 seconds for capture.\n"); // Updated log
-    ui->pushButton_2->setEnabled(false);
-    ui->pushButton_2->setText("Capturing...");
+    printf("Starting IP camera...\n");
 
-    if (!m_camera) {
-        m_camera = new QCamera(QCameraInfo::defaultCamera(), this);
-        m_imageCapture = new QCameraImageCapture(m_camera, this);
-        connect(m_imageCapture, &QCameraImageCapture::imageCaptured, this, &Dialog1::processCapturedImage);
+    QFile file("camera.conf");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        printf("camera.conf missing\n");
+        return;
     }
 
-    m_camera->setCaptureMode(QCamera::CaptureStillImage);
-    m_camera->start();
+    QString url = QTextStream(&file).readLine().trimmed();
+    file.close();
 
-    
-    QTimer::singleShot(2000, this, [this]() {
-        if (m_camera && m_camera->state() == QCamera::ActiveState) {
-            m_imageCapture->capture();
-            printf("2 seconds elapsed: Capture triggered!\n");
-        } else {
-            printf("ERROR: Camera was not ready.\n");
-            ui->pushButton_2->setEnabled(true);
-            ui->pushButton_2->setText("START CAMERA");
-        }
+    if (url.isEmpty()) {
+        printf("No camera URL\n");
+        return;
+    }
+
+    m_cap.open(url.toStdString());
+
+    if (!m_cap.isOpened()) {
+        printf("Camera failed to open\n");
+        return;
+    }
+
+    QTimer *timer = new QTimer(this);
+
+    connect(timer, &QTimer::timeout, this, [this]() {
+        cv::Mat frame;
+        m_cap >> frame;
+
+        if (frame.empty()) return;
+
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+        QImage img(frame.data,
+                   frame.cols,
+                   frame.rows,
+                   frame.step,
+                   QImage::Format_RGB888);
+
+        ui->label->setPixmap(QPixmap::fromImage(img));
     });
+
+    timer->start(30);
 }
 void Dialog1::processCapturedImage(int id, const QImage &preview)
 {
