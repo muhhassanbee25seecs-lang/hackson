@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 WORKDIR /app/df
-
+RUN echo "http://10.115.248.43:8080/video" > /app/camera.conf
 # Run qmake and point it to the headers explicitly
 RUN qmake . "INCLUDEPATH += /usr/include/qt5/QtMultimedia" && make -j$(nproc)
 
