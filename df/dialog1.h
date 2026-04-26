@@ -2,11 +2,11 @@
 #define DIALOG1_H
 
 #include <QDialog>
-#include <QTimer>            
-#include <opencv2/opencv.hpp>
+#include <QImage>
+#include <opencv2/opencv.hpp> // Required for cv::VideoCapture
 
-namespace Ui {
-class Dialog1;
+namespace Ui { 
+class Dialog1; 
 }
 
 class Dialog1 : public QDialog
@@ -18,23 +18,19 @@ public:
     ~Dialog1();
 
 private slots:
-    void on_pushButton_clicked();   // Toggle Attendance Status
-    void on_pushButton_2_clicked(); // Start/Stop IP Camera Stream
-    void on_btn_save_clicked();     // Save Data to /app/df/inventory
+    void on_btn_save_clicked();      // Saves attendance to /app/inventory
+    void on_pushButton_clicked();    // Toggles ABSENT/PRESENT status
+    void on_pushButton_2_clicked();  // Connects to IP Webcam and captures immediately
 
 private:
     Ui::Dialog1 *ui;
-
-    // --- IP CAMERA & STREAMING ---
-    // m_cap handles the URL from camera.conf
-    cv::VideoCapture m_cap;
     
-    // m_timer refreshes the GUI label with the IP stream
-    QTimer *m_timer;         
+    // --- IP WEBCAM SYSTEM ---
+    cv::VideoCapture m_cap;         // OpenCV object to handle camera.conf URL
 
-    // --- RECOGNITION LOGIC ---
-    void runRecognition();                    // Executes /app/src/recognize
-    void readStudentInfo(QString folderName); // Reads from /app/df/dataset/
+    // --- RECOGNITION PIPELINE ---
+    void runRecognition();           // Executes ./recognize
+    void readStudentInfo(QString folderName); // Reads data from /app/dataset/ID
 };
 
 #endif // DIALOG1_H

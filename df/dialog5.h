@@ -23,12 +23,17 @@ private slots:
 private:
     Ui::Dialog5 *ui;
     
-    // --- Helper Functions ---
-    // Make sure these names match exactly what you use in dialog5.cpp
+    // --- IP Webcam Handling ---
+    cv::VideoCapture m_cap;           // Handle for the IP stream
+    QString readConfigPath();         // Reads URL from /app/camera.conf
+
+    // --- Data Management ---
     void fetchStudentInfo(QString id); 
     void cleanLogs(QString id);
 
-    // Utility to convert OpenCV frames to Qt Images
+    // --- Image Processing ---
+    // Note: We used inline conversion in the .cpp, but keeping this 
+    // here if you prefer a dedicated conversion helper.
     QImage matToQImage(const cv::Mat &mat);
 };
 
